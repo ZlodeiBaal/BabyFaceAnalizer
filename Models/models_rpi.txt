@@ -1,0 +1,10 @@
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/face-detection-adas-0001/INT8/face-detection-adas-0001.bin
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/face-detection-adas-0001/INT8/face-detection-adas-0001.xml
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/gaze-estimation-adas-0002/INT8/gaze-estimation-adas-0002.bin
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/gaze-estimation-adas-0002/INT8/gaze-estimation-adas-0002.xml
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/head-pose-estimation-adas-0001/FP16/head-pose-estimation-adas-0001.bin
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/head-pose-estimation-adas-0001/FP16/head-pose-estimation-adas-0001.xml
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/emotions-recognition-retail-0003/INT8/emotions-recognition-retail-0003.bin
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/emotions-recognition-retail-0003/INT8/emotions-recognition-retail-0003.xml
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/landmarks-regression-retail-0009/FP16/landmarks-regression-retail-0009.bin
+https://download.01.org/opencv/2019/open_model_zoo/R3/20190905_163000_models_bin/landmarks-regression-retail-0009/FP16/landmarks-regression-retail-0009.xml

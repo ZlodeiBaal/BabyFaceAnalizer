@@ -1,0 +1,10 @@
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/face-detection-adas-0001/FP16-INT8/face-detection-adas-0001.bin
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/face-detection-adas-0001/FP16-INT8/face-detection-adas-0001.xml
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/gaze-estimation-adas-0002/FP16-INT8/gaze-estimation-adas-0002.bin
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/gaze-estimation-adas-0002/FP16-INT8/gaze-estimation-adas-0002.xml
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/head-pose-estimation-adas-0001/FP16-INT8/head-pose-estimation-adas-0001.bin
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/head-pose-estimation-adas-0001/FP16-INT8/head-pose-estimation-adas-0001.xml
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/emotions-recognition-retail-0003/FP16-INT8/emotions-recognition-retail-0003.bin
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/emotions-recognition-retail-0003/FP16-INT8/emotions-recognition-retail-0003.xml
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/landmarks-regression-retail-0009/FP16-INT8/landmarks-regression-retail-0009.bin
+https://download.01.org/opencv/2020/openvinotoolkit/2020.3/open_model_zoo/models_bin/1/landmarks-regression-retail-0009/FP16-INT8/landmarks-regression-retail-0009.xml
