@@ -6,6 +6,7 @@ import numpy as np
 class State():
     history_to_manage = 60 #sec
     IsFaceStableSeen = False
+    IsAudio=False
     IsNormalSeen = True
     IsSleep = True
     Face_detection_interval = 30#sec
@@ -20,11 +21,12 @@ class State():
     Last_Time_sent_sleep = -1
     Last_Time_sent_rotation = -1
     Last_Time_sent_Eyes = -1
+    Last_Time_sent_Audio = -1
     rotation_time = 0
     EyesOpened = 0
 
     def __init__(self):
-        self.Frame = namedtuple("FrameData", "isFace Time FacePose FaceSize Emotion FaceDirection EyeDirection EyeStatus")
+        self.Frame = namedtuple("FrameData", "isFace Time FacePose FaceSize Emotion FaceDirection EyeDirection EyeStatus Audio")
 
     def calculate_face_vizibilty(self):
         not_seen = 0
@@ -102,6 +104,25 @@ class State():
         else:
             self.EyesOpened = 0
 
+    def calculate_audio(self):
+        okno = 10
+        timenow = time.time()
+        amount=0
+        if len(self.FrameList) > okno:
+            for j in range(okno):
+                if self.FrameList[-j].Audio:
+                    amount+=1
+        if amount>2:
+            self.isAudio=True
+            if timenow - self.Last_Time_sent_Audio > self.How_Offten_spam:
+                self.alarm_type.append(4)
+                #print('Here')
+                self.Pending_for_alarm = True
+                self.Last_Time_sent_Audio = timenow
+        else:
+            self.isAudio=False
+
+
 
     def calculate_face_rotation(self):
         normal = 0
@@ -150,12 +171,12 @@ class State():
                 self.IsSleep = True
 
 
-    def append(self,state,pos,size,emo,ang,eye,emo_disp, ES):
+    def append(self,state,pos,size,emo,ang,eye,emo_disp, ES,audio):
         #fw = open('log.txt', 'a')
         #fw.write(str(state) + '\t' + str(pos)+ '\t' + str(size) + '\t' + str(emo)+ '\t' +str(emo_disp)+'\t'+str(ang) + '\t' + str(eye) +'\n')
         #fw.close()
 
-        F = self.Frame(state,time.time(),pos,size,emo,ang,eye,ES)
+        F = self.Frame(state,time.time(),pos,size,emo,ang,eye,ES,audio)
         self.FrameList.append(F)
         timenow=time.time()
         j=0
@@ -168,3 +189,4 @@ class State():
         self.calculate_face_mood()
         self.calculate_face_rotation()
         self.calculate_open_eyes()
+        self.calculate_audio()

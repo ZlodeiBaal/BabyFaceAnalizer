@@ -11,6 +11,7 @@ class BOT:
     RequestForState = []
     THISBOT = ''
     Warm_up = True
+    GameMode = False
     def __init__(self):
         file1 = open('tg_creedential.txt', 'r')
         if (os.path.isfile('SpamAdress.txt')):
@@ -26,7 +27,7 @@ class BOT:
                     'password': models_list[3].strip(),
                  }
         }
-        updater = Updater(models_list[0].strip(), request_kwargs=REQUEST_KWARGS)
+        updater = Updater(models_list[0].strip())#, request_kwargs=REQUEST_KWARGS)
         dp = updater.dispatcher
         self.THISBOT = updater.bot
         dp.add_handler(CommandHandler("start", self.start))
@@ -40,6 +41,10 @@ class BOT:
         dp.add_handler(CommandHandler("Wake_up_stop", self.del_sleep_change))
         dp.add_handler(CommandHandler("Eyes_opened_start", self.reg_eye_opened))
         dp.add_handler(CommandHandler("Eyes_opened_stop", self.del_eye_opened))
+        dp.add_handler(CommandHandler("Game_mod_start", self.reg_game_mood))
+        dp.add_handler(CommandHandler("Game_mod_stop", self.del_game_mood))
+        dp.add_handler(CommandHandler("Audio_start", self.reg_audio))
+        dp.add_handler(CommandHandler("Audio_stop", self.del_audio))
         updater.start_polling()
 
     def RewriteChat(self):
@@ -94,6 +99,8 @@ class BOT:
                             self.THISBOT.sendMessage(chat_id, "Машет головой!")
                         if mod == 3:
                             self.THISBOT.sendMessage(chat_id, "ГЛАЗА ОТКРЫТЫ!")
+                        if mod == 4:
+                            self.THISBOT.sendMessage(chat_id, "Звук!")
                 SM.alarm_type.pop(0)
 
 
@@ -102,7 +109,7 @@ class BOT:
 
         update.message.reply_text('Current commands: \n /CurrentPhoto \n /CurrentState \n /NO_FACE_start \n'
                                   ' /NO_FACE_stop \n /MOD_start \n'
-                                  ' /MOD_stop \n /Wake_up_start \n /Wake_up_stop \n /Eyes_opened_start \n /Eyes_opened_stop')
+                                  ' /MOD_stop \n /Wake_up_start \n /Wake_up_stop \n /Eyes_opened_start \n /Eyes_opened_stop \n /Game_mod_start \n /Game_mod_stop \n /Audio_start \n /Audio_stop')
 
     def Status(self,bot,update):
         if not self.Warm_up:
@@ -131,6 +138,26 @@ class BOT:
         mod = 3
         update.message.reply_text("Для отмены: /Eyes_opened_stop")
         self.register_user(bot,update,mod)
+
+    def reg_game_mood(self, bot, update):
+        mod = 5
+        self.GameMode=True
+        update.message.reply_text("Для отмены: /Game_mod_stop")
+        self.register_user(bot,update,mod)
+
+    def reg_audio(self, bot, update):
+        mod = 4
+        update.message.reply_text("Для отмены: /Audio_stop")
+        self.register_user(bot,update,mod)
+
+    def del_audio(self, bot, update):
+        mod = 4
+        self.delete_user(bot,update,mod)
+
+    def del_game_mood(self, bot, update):
+        mod = 5
+        self.GameMode = False
+        self.delete_user(bot,update,mod)
 
     def del_eye_opened(self, bot, update):
         mod = 3

@@ -6,8 +6,21 @@ import time
 import random, string
 import os
 import DetectionModels, DrawFunctions, StateMachine, telegram_reports
+import webrtcvad
+import pyaudio
 
 RPicamera = False
+
+def LoadData(folder_load):
+    image_files=[]
+    for j in range(200):
+        adress = os.path.join(folder_load, str(j)+'.jpg')
+        if os.path.isfile(adress):
+            image_files.append(adress)
+        else:
+            break
+    return image_files
+
 
 if RPicamera:
     from picamera.array import PiRGBArray
@@ -23,6 +36,7 @@ DrawOnImage = True
 ShowImage = True
 last_time_eye_save = -1
 save_eye = True
+Video=True
 
 def DecideParams(ie):
     Device_List = ie.available_devices
@@ -65,6 +79,43 @@ def DecideParams(ie):
 
 def main():
 
+    #AudioPart
+    Audio=False
+    try:
+        CHUNK = 480
+        FORMAT = pyaudio.paInt16
+        CHANNELS = 1
+        RATE = 16000
+        RECORD_SECONDS = 1
+        p = pyaudio.PyAudio()
+        stream = p.open(format = FORMAT,
+                    channels = CHANNELS,
+                    rate = RATE,
+                    input = True,
+                    input_device_index = 0,
+                    frames_per_buffer = CHUNK)
+        vad = webrtcvad.Vad()
+        vad.set_mode(3)
+        Audio=True
+    except Exception:
+        print("exeption, no audio")
+
+
+
+    images_angry = LoadData("./Images/angry/")
+    print('loaded angry - '+str(len(images_angry)))
+    images_happy = LoadData("./Images/happy/")
+    images_neutral = LoadData("./Images/neutral/")
+    images_sad = LoadData("./Images/sad/")
+    images_surprise = LoadData("./Images/surprise/")
+    angry_pos=0
+    happy_pos=0
+    neutral_pos=0
+    sad_pos=0
+    surprise_pos=0
+    time_now = time.time()
+    time_last = time.time()
+
     ie = IECore()
     DeviceName, Platform = DecideParams(ie)
 
@@ -75,13 +126,17 @@ def main():
         last_time_eye_save = -1
         save_eye = True
         USBCam=True
+        Video = True
     else:
         DrawOnImage = True
         ShowImage = True
         last_time_eye_save = -1
         save_eye = True
-        USBCam = False
-
+        USBCam = True
+        Video = True
+    if Video:
+        cv2.namedWindow("Main", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("Main", cv2.WND_PROP_FULLSCREEN, 1)
     SM = StateMachine.State()
     Tel = telegram_reports.BOT()
 
@@ -119,6 +174,14 @@ def main():
         disp = FaceDetector.PredictFace(image)
 
         isFaceFound = False
+        
+        if Audio:
+                data_audio = stream.read(CHUNK, exception_on_overflow = False)   
+                result_audio = vad.is_speech(data_audio, RATE)
+                #if result_audio:
+                #    print('Kek_')
+        else:
+            result_audio=False
         for j in range(disp.shape[0]):
             hypotesis = disp[j]
             if hypotesis[2]>0.8:
@@ -185,18 +248,73 @@ def main():
                                 print(str(gazeAnglesx)+"      "+str(gazeAnglesy))
         if isFaceFound:
             if DetectEyes:
-                SM.append(True,(xtl,ytl),(input_w,input_h),emo,(pitch, roll, yaw),(vec, gazeAnglesx, gazeAnglesy),emo_disp,(vec1,vec2))
+                SM.append(True,(xtl,ytl),(input_w,input_h),emo,(pitch, roll, yaw),(vec, gazeAnglesx, gazeAnglesy),emo_disp,(vec1,vec2),result_audio)
             else:
                 SM.append(True, (xtl, ytl), (input_w, input_h), emo, (pitch, roll, yaw),
-                          ([0,0,0], 0, 0),emo_disp,('NotPresent','NotPresent'))
+                          ([0,0,0], 0, 0),emo_disp,('NotPresent','NotPresent'),result_audio)
         else:
-            SM.append(False, (0, 0), (0, 0), 'neutral', (0, 0, 0), ([0,0,0], 0, 0),(0,0,0,0,0),('NotPresent','NotPresent'))
+            SM.append(False, (0, 0), (0, 0), 'neutral', (0, 0, 0), ([0,0,0], 0, 0),(0,0,0,0,0),('NotPresent','NotPresent'),result_audio)
+
+
 
         Tel.ReleaseRequests(SM,input_image)
         if ShowImage:
             cv2.imshow("depth",input_image)
             cv2.waitKey(10)
+        if Video:
+            blank_image = np.zeros((480, 640, 3), np.uint8)
+            if Tel.GameMode:
+                time_now = time.time()
+                dt = (time_now-time_last)*30
+                sdvig=1
+                if dt==0:
+                    sdvig=1
+                else:
+                    if dt>10:
+                        sdvig=10
+                    else:
+                        sdvig=int(dt)
 
+                if SM.FrameList[-1].Emotion=='anger':
+                    #blank_image=cv2.imread('./Images/sun.jpg')
+                    #blank_image=cv2.imread('./Images/happy.jpg')
+                    blank_image=cv2.imread(images_angry[angry_pos])
+                    angry_pos+=sdvig
+                    if angry_pos>=len(images_angry):
+                        angry_pos=0
+                if SM.FrameList[-1].Emotion=='happy':
+                    #blank_image=cv2.imread('./Images/lightning.jpg')
+                    #blank_image=cv2.imread('./Images/sad.jpg')
+                    blank_image=cv2.imread(images_happy[happy_pos])
+                    happy_pos+=sdvig
+                    if happy_pos>=len(images_happy):
+                        happy_pos=0
+                if SM.FrameList[-1].Emotion=='neutral':
+                    #blank_image=cv2.imread('./Images/tree.jpg')
+                    #blank_image=cv2.imread('./Images/surpryze.jpg')
+                    blank_image=cv2.imread(images_neutral[neutral_pos])
+                    neutral_pos+=sdvig
+                    if neutral_pos>=len(images_neutral):
+                        neutral_pos=0
+                if SM.FrameList[-1].Emotion=='sad':
+                    #blank_image=cv2.imread('./Images/lightning.jpg')
+                    #blank_image=cv2.imread('./Images/angry.jpg')
+                    blank_image=cv2.imread(images_sad[sad_pos])
+                    sad_pos+=sdvig
+                    if sad_pos>=len(images_sad):
+                        sad_pos=0
+                if SM.FrameList[-1].Emotion=='surprise':
+                    #blank_image=cv2.imread('./Images/cherniy_kvadrat.jpg')
+                    #blank_image=cv2.imread('./Images/neutral.jpg')
+                    blank_image=cv2.imread(images_surprise[surprise_pos])
+                    surprise_pos+=sdvig
+                    if surprise_pos>=len(images_surprise):
+                        surprise_pos=0
+                time_last  = time_now
+            else:
+                cv2.putText(blank_image,'GameModIsOff', (320,240),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,255,255),1)
+            cv2.imshow("Main",blank_image)
+            cv2.waitKey(10)
 
 
 if __name__ == '__main__':

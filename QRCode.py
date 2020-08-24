@@ -1,17 +1,13 @@
-import cv2 #OpenCV in my opinion best library for work with camera
-from pyzbar.pyzbar import decode #Zbar - best opensource library for work with QRcode. OpenCV also can it, but not in every build.
+import cv2
+from pyzbar.pyzbar import decode
 import socket
 import time
 import os
 import script
-
-RPicamera = False #also can work with RPiCamera
-if RPicamera:
-    from picamera.array import PiRGBArray
-    from picamera import PiCamera
+import numpy as np
+from openvino.inference_engine import IECore
 
 
-#ForTestReasons
 def DecideParams():
     try:
         if os.uname()[4][:3] == 'arm':
@@ -22,9 +18,9 @@ def DecideParams():
             Platform = 'UNIX'
     except:
         Platform = 'WIN'
+
     return Platform
 
-#Simple check if internet is online
 def is_connected():
     try:
         # connect to the host -- tells us if the host is actually
@@ -35,51 +31,89 @@ def is_connected():
         pass
     return False
 
-#Check if ARM
 Platform = DecideParams()
-testmod = True #To test on Windows machine without connections
-
+testmod = False
+Video = True
 
 if Platform=='RPiOS' or Platform=='UNIX' or testmod:
+
+    cap = cv2.VideoCapture(0)
+    cv2.namedWindow("programm", cv2.WND_PROP_FULLSCREEN)          
+    cv2.setWindowProperty("programm", cv2.WND_PROP_FULLSCREEN, 1)
+
+    if cap is None or not cap.isOpened():
+        blank_image = np.zeros((480,640,3), np.uint8)
+        cv2.putText(blank_image,'No Camera found', (320,240),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,255,255),1)
+        while cap is None or not cap.isOpened():
+            cv2.imshow("programm", blank_image)
+            cv2.waitKey(50)
+            cap = cv2.VideoCapture(0)
+    print('camera found')
+    
+    ie = IECore()
+    Device_List = ie.available_devices
+    while len(Device_List)==0:
+        blank_image = np.zeros((480,640,3), np.uint8)
+        cv2.putText(blank_image,'No OpenVinoDevice', (320,240),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,255,255),1)
+        cv2.imshow("programm", blank_image)
+        cv2.waitKey(50)
+        time.sleep(5)
+        Device_List = ie.available_devices
+    print('OpenVinoDevice found')
+
     isconnect=False
-    #Try to connect for 60 seconds. If no connection found - start process
     if not testmod:
         time_start = time.time()
         isconnect = is_connected()
         try_to_connect = not isconnect
         while try_to_connect:
             time.sleep(5)
-            if time.time()-time_start<60:
+            blank_image = np.zeros((480,640,3), np.uint8)
+            cv2.putText(blank_image,'TryConnectToInternet', (320,240),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,255,255),1)
+            cv2.imshow("programm", blank_image)
+            cv2.waitKey(50)
+            if time.time()-time_start<30:
+                try_to_connect=True
+
+            else:
                 try_to_connect=False
+
+                fw = open('log2.txt', 'a')
+                fw.write('connected on start' +'\n')
+                fw.close()
             if is_connected():
                 try_to_connect=False
-    #if machine not connected to internet or in testmode
-    if testmod or not isconnect:
-        #if we have RPi camera - we can use it
-        if RPicamera:
-            camera = PiCamera()
-            camera.resolution = (640, 480)
-            camera.framerate = 32
-            rawCapture = PiRGBArray(camera, size=(640, 480))
-            time.sleep(0.1)
-        else:
-            cap = cv2.VideoCapture(0)
+                fw = open('log2.txt', 'a')
+                fw.write('already connected on start' +'\n')
+                fw.close()
+        fw = open('log2.txt', 'a')
+        fw.write(str(time.time()-time_start) +'\n')
+        fw.close()
 
+    if not is_connected():
+        if Platform=='RPiOS' or Platform=='UNIX':
+            if os.path.isfile("wpa_supplicant_auto.conf"):  
+                script.reconnect("wpa_supplicant_auto.conf")     
+                fw = open('log2.txt', 'a')
+                fw.write('try to reconnect via supplicant' +'\n')
+                fw.close()       
+
+    if is_connected():
+        print('already connected')
+    if testmod or not is_connected():
+        print('try to connect:')
+        fw = open('log2.txt', 'a')
+        fw.write('try to connect' +'\n')
+        fw.close()
         timestamp = -1
         continue_search=True
         last_check_time = time.time()
         while continue_search:
-            #if we have RPI camera
-            if RPicamera:
-                rawCapture.truncate(0)
-                image = next(camera.capture_continuous(rawCapture, format="bgr", use_video_port=True)).array
-            else:
-                was_read, image = cap.read()
-            #After we find QRCode - we stop deterction for 20 secondes, or it will be continius reconnect attemps
+            was_read, image = cap.read()
             if time.time()-timestamp>20:
-                data = decode(image) #Search for codes
+                data = decode(image)
                 if len(data) > 0:
-                    #Parse classical QRCode structure for WiFi connection
+                    #print("Decoded Data : {}".format(data[0].data))
                     s = data[0].data.decode("utf-8").split(';')
                     pas = ''
                     ssid = ''
@@ -90,7 +124,6 @@ if Platform=='RPiOS' or Platform=='UNIX' or testmod:
                             if i[0]=='S':
                                 ssid= i[2:]
                     if pas!='' and ssid!='':
-                        #Create connection file wor wpa
                         text = "network={\n"
                         text+="""ssid="{}"
                     psk="{}"
@@ -106,17 +139,53 @@ if Platform=='RPiOS' or Platform=='UNIX' or testmod:
                             script.reconnect("wpa_supplicant_auto.conf")
                         timestamp=time.time()
                         print("Detected!")
+                        if testmod:
+                            continue_search=False
                 else:
                     print("NotFound")
             else:
                 time.sleep(1)
                 if not testmod:
                     continue_search = not is_connected()
-            if Platform!='RPiOS': # if not RPi - visualisation
-                cv2.imshow("depth", image)
+            cv2.putText(image, 'Show_me_QR_Code_for_WiFi', (320, 240), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255),
+                        1)
+            if Platform!='RPiOS':
+                cv2.imshow("programm", image)
                 cv2.waitKey(10)
             else:
-                if not testmod: # if not testmode - try to connect
+                if not testmod:
                     if time.time() - last_check_time>5:
                         continue_search = not is_connected()
                         last_check_time = time.time()
+                        fw = open('log2.txt', 'a')
+                        fw.write('connected on search' +'\n')
+                        fw.close()                        
+                if Video:
+                    cv2.imshow("programm", image)
+                    cv2.waitKey(10)
+    else:
+        text_file = open("Sucess.txt", "w")
+        n = text_file.write('everything ok')
+        text_file.close()
+
+
+    continue_search=True
+    timestamp = -1
+    if not os.path.isfile("tg_creedential.txt"):
+        while continue_search:
+            was_read, image = cap.read()
+            if time.time() - timestamp > 10:
+                data = decode(image)
+                if len(data) > 0:
+                    s = data[0].data.decode("utf-8").split('\n')
+                    if len(s)==4:
+                        text_file = open("tg_creedential.txt", "w")
+                        for i in s:
+                            n = text_file.write(i + '\n')
+                        text_file.close()
+                        timestamp = time.time()
+                        continue_search=False
+            cv2.putText(image, 'Show_me_QR_Code_for_Telegramm', (320, 240), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255),
+                            1)
+            cv2.imshow("programm", image)
+            cv2.waitKey(10)
