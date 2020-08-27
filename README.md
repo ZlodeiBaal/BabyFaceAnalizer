@@ -30,11 +30,13 @@ Also, this is usefull command for me:
 You can use this RPi image, which is already set up - https://yadi.sk/d/mkt8nhx1w03m3A
 
 #Start
+
 There are 2 script that you may need to start this repo:
 1. `QRCode.py` - providing connection to WiFi and telegram, checking camera and movidius connection.
 2. `face.py` - main script, better to read this article - https://habr.com/ru/company/recognitor/blog/516232/ 
 
 #QRCode.py
+
 1. If internet is not connected this script connecti to camera and start searching QRCode with information that discrabed here - https://github.com/ZlodeiBaal/RPi_WiFi_autoconnect
 2. Checking file `tg_creedential.txt` with telegram credentials. If file not present - start searching QRCode with text:
 ```
